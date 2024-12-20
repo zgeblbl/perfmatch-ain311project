@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from joblib import load
+import pickle
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
@@ -66,5 +67,51 @@ def predict():
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+
+player_df= pd.read_parquet('parquet_data/player_df_missing_handled.parquet')
+
+def predict_contribution(player_names):
+    target_columns =['Kills', 'Errors', 'Total Attacks', 'Assists','Digs','Block Assists', 'PTS']
+    player_avg_df = pd.DataFrame()
+
+    for player_name in player_names:
+        player_data = player_df[player_df['name'] == player_name]
+        player_avg = player_data[target_columns].mean()
+        player_avg_df = pd.concat([player_avg_df, player_avg.to_frame().T], ignore_index=True)
+    predictions_df = pd.DataFrame()
+    for column in player_avg_df.columns:
+        with open(f'pkl_files_regression/randomForest_model_{column}.pkl', 'rb') as f:
+            loaded_model = pickle.load(f)
+
+        X = player_avg_df.drop(columns=column)
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        y_pred = loaded_model.predict(X_scaled)
+        predictions_df[column] = y_pred
+
+    return player_avg_df, predictions_df
+
+@app.route('/calculate-contributions', methods=['POST'])
+def calculate_contributions():
+    data = request.json
+    player_names = data.get('filteredPlayers', [])
+
+    if len(player_names) < 6:
+        return jsonify({'success': False, 'error': 'Please select at least 6 players.'})
+
+    try:
+        # Call the predict_contribution function
+        _, predictions_df = predict_contribution(player_names)
+
+        print()
+        
+        # Convert DataFrame to JSON for frontend
+        contributions = predictions_df.to_dict(orient='records')
+        
+        return jsonify({'success': True, 'contributions': contributions})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
