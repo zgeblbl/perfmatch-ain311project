@@ -71,7 +71,7 @@ def predict():
 player_df= pd.read_parquet('parquet_data/player_df_missing_handled.parquet')
 
 def predict_contribution(player_names):
-    target_columns =['Kills', 'Errors', 'Total Attacks', 'Assists','Digs','Block Assists', 'PTS']
+    target_columns =['Kills', 'Errors', 'Total Attacks', 'Assists', 'Digs','Block Assists', 'PTS']
     player_avg_df = pd.DataFrame()
 
     for player_name in player_names:
@@ -80,7 +80,7 @@ def predict_contribution(player_names):
         player_avg_df = pd.concat([player_avg_df, player_avg.to_frame().T], ignore_index=True)
     predictions_df = pd.DataFrame()
     for column in player_avg_df.columns:
-        with open(f'pkl_files_regression/randomForest_model_{column}.pkl', 'rb') as f:
+        with open(f'pkl_files_regression/{column}.pkl', 'rb') as f:
             loaded_model = pickle.load(f)
 
         X = player_avg_df.drop(columns=column)
@@ -88,7 +88,9 @@ def predict_contribution(player_names):
         X_scaled = scaler.fit_transform(X)
         y_pred = loaded_model.predict(X_scaled)
         predictions_df[column] = y_pred
-
+        
+    print(predictions_df.columns)    
+    predictions_df = predictions_df.drop(columns=['Assists','Block Assists'])
     return player_avg_df, predictions_df
 
 @app.route('/calculate-contributions', methods=['POST'])
