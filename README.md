@@ -42,7 +42,7 @@ The backend exposes endpoints used by the frontend UI, which lets users:
 Note: The frontend is maintained in a separate repository. You can access the frontend repository [here](https://github.com/zgeblbl/perfmatch-frontend).
 
 ---
-## 👨‍💻 Team
+## 👩‍💻 Team
 Project developed for AIN311 Course
 
 Contributors: Özge Bülbül - Sümeyra Koç - Zeynep Yıldız
